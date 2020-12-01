@@ -7,7 +7,7 @@ using namespace std;
 
 map<long long, int> mps[366];
 person *persons;
-int cnt = 0;
+//int cnt = 0;
 
 // 假设每个月都是 30 天，传入 0203 这种格式的日期
 int extract_days(char* str) {
@@ -38,7 +38,7 @@ person *person_search(char *id) {
     long long key = encode(id, 18);
     int days = extract_days(&id[10]);
     auto iter = mps[days].find(key);
-    if (iter != mps[days].end()) cnt++;
+    //if (iter != mps[days].end()) cnt++;
     return iter == mps[days].end() ? nullptr : &(persons[iter->second]);
 }
 
@@ -54,6 +54,6 @@ int main() {
     // search
     print_search_n_time(person_search, N, persons);
     delete[] persons;
-    cout << "hit : " << cnt << endl;
+   // cout << "hit : " << cnt << endl;
     return 0;
 }

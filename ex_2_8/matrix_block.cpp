@@ -11,13 +11,15 @@ int main(int argc, char ** argv) {
     float seed;
     cout << "enter seed(0-1):" << endl;
     cin >> seed;
-    cout << "enter N & B:" << endl;
-    while (cin >> N >> B) {
-        // create matrix
-        float *a = new float[N*N];
-        float *b = new float[N*N];
+    cout << "enter N" << endl;
+    cin >> N;
+    // create matrix
+    float *a = new float[N*N];
+    float *b = new float[N*N];
+    matrix_gen(a, b, N, seed);
+    cout << "enter B" << endl;
+    while (cin >> B) {
         float *c = new float[N*N];
-        matrix_gen(a, b, N, seed);
         // timer start
         struct timeval start;
         struct timeval end;
@@ -28,13 +30,13 @@ int main(int argc, char ** argv) {
         // timer end
         gettimeofday(&end, NULL);
         diff = 1e6 * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;
-        delete[] a;
-        delete[] b;
+ 
         delete[] c;
         cout << "cost: " << diff << " ns" << endl;
-        cout << "enter N & B:" << endl;
+        cout << "enter B:" << endl;
     }
-    
+    delete[] a;
+    delete[] b;
     return 0;
 }
 
