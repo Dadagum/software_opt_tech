@@ -1,6 +1,6 @@
 #include"ex_1_6.h"
 #include<random>
-//#include<iostream>
+// #include<iostream>
 /**
  * 为了编程方便，假设每一个月都是 30 天，并且生成的身份证号码都是由数字 1-9 组成
 **/
@@ -95,7 +95,7 @@ static void rand_n_alp(char* mem, int n) {
 
 // int main() {
 //     person data[32];
-//     for (int i = 0; i < 30; ++i) {
+//     for (int i = 0; i < 50; ++i) {
 //         gen_one_person(&data[i]);
 //         for (int j = 0; j < 18; ++j) std::cout << data[i].id[j];
 //         std::cout << std::endl;
