@@ -12,11 +12,6 @@ static std::uniform_int_distribution<unsigned> day_distribution(1, 30);
 static std::uniform_int_distribution<unsigned> one_digit(1, 9);
 static std::uniform_int_distribution<unsigned> one_alp(1, 26);
 
-static std::string months[13] = {"N", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"};
-static std::string days[31] = {"N", "01", "02", "03", "04", "05", "06", "07", "08", "09", 
-                                    "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
-                                    "21", "22", "23", "24", "25", "26", "27", "28", "29", "30"};
-
 static void int_fill_char_array(int end, char* mem, int val);
 static void rand_n_digit(char* mem, int n);
 static void rand_n_alp(char* mem, int n);
@@ -32,6 +27,17 @@ void gen_one_person(person *p) {
     rand_n_alp(p->address, 60);
     // phone
     rand_n_digit(p->phone_num, 14);
+}
+
+void gen_n_person(person *p, int N) {
+    for (int i = 0; i < N; ++i) {
+        gen_one_person(&p[i]);
+    }
+}
+
+// 生成 [0, N-1] 范围的随机数
+unsigned zero_to_n(int N) {
+    return engine() % N;
 }
 
 static void rand_id_card(char* card) {
