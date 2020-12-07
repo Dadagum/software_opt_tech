@@ -1,5 +1,6 @@
-#include<emmintrin.h>
-#include<emmintrin.h>
+#include <nmmintrin.h>//SSE4.2(include smmintrin.h)
+#include <immintrin.h>//AVX(include wmmintrin.h)
+
 #include"matrix_mul_simd.h"
 #define SSE_F_CAPACITY 4
 
