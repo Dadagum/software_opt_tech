@@ -7,8 +7,8 @@
 #include"matrix_mul_simd.h"
 using namespace std;
 
-// sse 对齐要求
-const int BYTE_SIZE = 16; 
+// avx 对齐要求
+const int BYTE_SIZE = 32; 
 
 // 分块大小 B
 static int blocks[] = {8, 16, 32, 64, 128};
@@ -17,14 +17,14 @@ const int b_size = 5;
 static int matrixs[] = {512, 1024, 2048, 4096};
 const int m_size = 4;
 
-const float seed = 0.374424;
+const float seed = 0.783943;
 
 int main() {
     for (int i = 0; i < m_size; ++i) {
         int N = matrixs[i];
         for (int j = 0; j < b_size; ++j) {
             int B = blocks[j];
-            // sse 需要 128 位内存对齐
+            // avx 需要 256 位内存对齐
             float *a = (float*) memalign(BYTE_SIZE, sizeof(float)*N*N);
             float *b = (float*) memalign(BYTE_SIZE, sizeof(float)*N*N);
             float *c = (float*) memalign(BYTE_SIZE, sizeof(float)*N*N);
@@ -38,13 +38,13 @@ int main() {
             unsigned long diff;
             gettimeofday(&start, NULL);
             // exec multply
-            matrix_multply_sse(a, b, c, N, B);
+            matrix_multply_avx(a, b, c, N, B);
             // timer end
             gettimeofday(&end, NULL);
             diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
     
             // 打印结果
-            cout << "SSE: 矩阵 N = " << N << " ， 分块 B = " << B << " ，耗时 : " << diff << "ms" << endl;
+            cout << "AVX: 矩阵 N = " << N << " ， 分块 B = " << B << " ，耗时 : " << diff << "ms" << endl;
             // 释放内存
             free(a);
             free(b);
