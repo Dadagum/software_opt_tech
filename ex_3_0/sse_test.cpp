@@ -1,6 +1,8 @@
 #include<iostream>
-#include<malloc.h>
+#include<stdlib.h>
 #include<sys/time.h>
+#include<cstring>
+#include<malloc.h>
 #include"rand_matrix.h"
 #include"matrix_mul_simd.h"
 using namespace std;
@@ -17,7 +19,7 @@ const int m_size = 4;
 
 const float seed = 0.374424;
 
-int main(int argc, char ** argv) {
+int main() {
     for (int i = 0; i < m_size; ++i) {
         int N = matrixs[i];
         // sse 需要 128 位内存对齐
