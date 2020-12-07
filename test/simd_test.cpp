@@ -11,7 +11,7 @@ using namespace std;
 const int BYTE_SIZE = 8; 
 // 矩阵大小: N * N
 static int matrixs[] = {8, 16, 32};
-const int m_size = 4;
+const int m_size = 3;
 int B = 8;
 
 const float seed = 0.374424;
