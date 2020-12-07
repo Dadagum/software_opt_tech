@@ -22,16 +22,16 @@ const float seed = 0.374424;
 int main() {
     for (int i = 0; i < m_size; ++i) {
         int N = matrixs[i];
-        // sse 需要 128 位内存对齐
-        float *a = (float*) memalign(BYTE_SIZE, sizeof(float)*N*N);
-        float *b = (float*) memalign(BYTE_SIZE, sizeof(float)*N*N);
-        float *c = (float*) memalign(BYTE_SIZE, sizeof(float)*N*N);
-        memset(c, 0, N*N);
-        matrix_gen(a, b, N, seed);
-        cout << "随机矩阵构建结束，准备进行计算 ..."<< endl;
         for (int j = 0; j < b_size; ++j) {
             int B = blocks[j];
-
+            // sse 需要 128 位内存对齐
+            float *a = (float*) memalign(BYTE_SIZE, sizeof(float)*N*N);
+            float *b = (float*) memalign(BYTE_SIZE, sizeof(float)*N*N);
+            float *c = (float*) memalign(BYTE_SIZE, sizeof(float)*N*N);
+            memset(c, 0, N*N);
+            matrix_gen(a, b, N, seed);
+            cout << "随机矩阵构建结束，准备进行计算 ..."<< endl;
+            
             // timer start
             struct timeval start;
             struct timeval end;
@@ -44,12 +44,13 @@ int main() {
             diff =  (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
     
             // 打印结果
-            cout << "SSE: 矩阵 N = " << N << " ， 分块 B = " << B << " ，耗时 : " << diff << "s" << endl;
+            cout << "SSE: 矩阵 N = " << N << " ， 分块 B = " << B << " ，耗时 : " << diff << "ms" << endl;
+            // 释放内存
+            free(a);
+            free(b);
+            free(c);
         }
-        // 释放内存
-        free(a);
-        free(b);
-        free(c);
+
     }
     return 0;
 }
