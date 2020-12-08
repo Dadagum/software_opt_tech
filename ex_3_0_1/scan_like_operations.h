@@ -1,5 +1,13 @@
 #pragma once
 #include<vector>
+
+// 使用 simd 处理的阈值，暂时定为 128
+#define THRESHOLD 128
+// avx 中可以容纳 8 个 32 位整数
+#define AVX_S 8
+#define AVX_ALIGN 32
+#define NOT_EXSIST -2147483648
+
 /**
  * 模拟数据库行为：对所有 x 范围在 [left, right] 的元组，对 y 进行相应的处理
  * 使用 simd 加快行为

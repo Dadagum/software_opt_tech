@@ -2,12 +2,6 @@
 #include <nmmintrin.h>
 #include <immintrin.h>
 #include<iostream>
-// 使用 simd 处理的阈值，暂时定为 128
-#define THRESHOLD 128
-// avx 中可以容纳 8 个 32 位整数
-#define AVX_S 8
-#define AVX_ALIGN 32
-#define NOT_EXSIST -2147483648
 using namespace std;
 
 static int mask_buffer[AVX_S];
@@ -88,7 +82,28 @@ std::vector<int> find_all_matches_simd(int *x, int *y, int size, int left, int r
     return res;
 }
 
-int get_matches_sum_simd(int *x, int *y, int size, int left, int right);
+int get_matches_sum_simd(int *x, int *y, int size, int left, int right) {
+    int sum = 0;
+
+    __m256i LEFT = _mm256_set1_epi32(left);
+    __m256i RIGHT = _mm256_set1_epi32(right);
+    int i = 0;
+    for (; i + AVX_S <= size; i += AVX_S) {
+        __m256i X = _mm256_loadu_si256((__m256i*)(x+i));
+        // SIMD_condition
+        __m256i con = _mm256_and_si256(_mm256_cmpgt_epi32(RIGHT, X), _mm256_cmpgt_epi32(X, LEFT));
+        
+
+    }
+
+    // 说明前面都没有 match，那么对剩下的部分计算
+    for (; i < size; ++i) {
+        if (left <= x[i] && x[i] <= right){
+            return y[i];
+        }
+    }
+    return sum;
+}
 
 int count_matches_simd(int *x, int size, int left, int right);
 
