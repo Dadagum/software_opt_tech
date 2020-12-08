@@ -22,15 +22,15 @@ const float seed = 0.783943;
 int main() {
     for (int i = 0; i < m_size; ++i) {
         int N = matrixs[i];
-        for (int j = 0; j < b_size; ++j) {
-            int B = blocks[j];
+        for (int j = 0; j < b_size+1; ++j) {
+            int B = j == b_size ? N : blocks[j];
             // avx 需要 256 位内存对齐
             float *a = (float*) memalign(BYTE_SIZE, sizeof(float)*N*N);
             float *b = (float*) memalign(BYTE_SIZE, sizeof(float)*N*N);
             float *c = (float*) memalign(BYTE_SIZE, sizeof(float)*N*N);
             memset(c, 0, sizeof(float)*N*N);
             matrix_gen(a, b, N, seed);
-            cout << "随机矩阵构建结束，准备进行计算 ..."<< endl;
+//            cout << "随机矩阵构建结束，准备进行计算 ..."<< endl;
 
             // timer start
             struct timeval start;
