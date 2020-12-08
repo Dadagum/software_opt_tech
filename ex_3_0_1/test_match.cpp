@@ -8,7 +8,7 @@ using namespace std;
 static std::default_random_engine engine;
 static std::uniform_int_distribution<unsigned> dis(1, 1e6);
 const int len = 3;
-static int cnt[] = {1e6, 1e7, 1e8};
+static int cnt[] = {1000000, 10000000, 100000000};
 
 static int find_first_match(int *x, int *y, int size, int left, int right) {
     for (int i = 0; i < size; ++i) {
@@ -62,9 +62,9 @@ int main() {
             x[j] = dis(engine);
             y[j] = dis(engine);
             // first match baseline
-
+	}
             // timer start
-            struct timeval start;
+	     struct timeval start;
             struct timeval end;
             unsigned long diff;
             gettimeofday(&start, NULL);
@@ -101,7 +101,9 @@ int main() {
             gettimeofday(&end, NULL);
             diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
             cout << "simd all matches: " << res2 << " cost: " << diff << endl;
-        }
+        
+	free(x);
+	free(y);
     }
     
 }
