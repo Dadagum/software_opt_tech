@@ -4,10 +4,10 @@ using namespace std;
 
 
 int main() {
-    int x[] = {34, 23, 5, 6 , 7, 56, 78, 99};
-    int y[] = {34, 23, 5, 6 , 7, 56, 78, 99};
-    int size = 8;
+    int x[] = {34, 65, 25, 26 , 7, 56, 78, 99, 1};
+    int y[] = {34, 5, 25, 6 , 7, 56, 78, 99, 100};
+    int size = 9;
     int left = 0;
     int right = 10;
-    cout << find_first_match_simd(x, t, size, left, right);
+    cout << find_first_match_simd(x, y, size, left, right);
 }
