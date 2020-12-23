@@ -1,14 +1,19 @@
 #include <nmmintrin.h>//SSE4.2(include smmintrin.h)
 #include <immintrin.h>//AVX(include wmmintrin.h)
-
+#include <omp.h>
 #include"matrix_mul_simd.h"
 #define SSE_F_CAPACITY 4
 #define AVX_F_CAPACITY 8
+
+/**
+ * 为了对比，这个版本也使用 openmp 多线程（暂时都使用 16 线程），直接加上 parallel for 语句
+ **/ 
 
 // sse：128 位寄存器可以放 4 个 float
 // 需要 B % 4 == 0
 void matrix_multply_sse(float *a, float *b, float *c, int N, int B) {
     // 固定矩阵 A
+    #pragma omp parallel for
     for (int i = 0; i < N; i += B) {
         for (int j = 0; j < N; j += B) {
             for (int k = 0; k < N; k += B) {
@@ -66,6 +71,7 @@ void matrix_multply_sse(float *a, float *b, float *c, int N, int B) {
 // 需要 B % 8 == 0
 void matrix_multply_avx(float *a, float *b, float *c, int N, int B) {
 // 固定矩阵 A
+    #pragma omp parallel for
     for (int i = 0; i < N; i += B) {
         for (int j = 0; j < N; j += B) {
             for (int k = 0; k < N; k += B) {
