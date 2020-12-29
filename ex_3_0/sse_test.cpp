@@ -4,7 +4,7 @@
 #include<cstring>
 #include<malloc.h>
 #include"rand_matrix.h"
-#include"matrix_mul_simd.h"
+#include"matrix_mul_sse.h"
 using namespace std;
 
 // sse 对齐要求
