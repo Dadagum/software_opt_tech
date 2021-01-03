@@ -6,13 +6,25 @@
 using namespace std;
 
 static std::default_random_engine engine;
-static std::uniform_int_distribution<unsigned> dis(0, 100000000);
+static std::uniform_int_distribution<unsigned> match_dis(0, 100000000);
+static std::uniform_int_distribution<unsigned> sum_dis(0, 100);
 const int len = 1;
-static int cnt[] = {100000000};
+static int cnt[] = {20000000};
 
 void run_test_match();
+void run_sum_match();
 
-static int find_first_match(int *x, int *y, int size, int left, int right) {
+int cal_sum(int *x, int *y, int size, int left, int right) {
+    int ans = 0;
+    for (int i = 0; i < size; ++i) {
+        if (left <= x[i] && x[i] <= right) {
+            ans += y[i];
+        }
+    }
+    return ans;
+}
+
+int find_first_match(int *x, int *y, int size, int left, int right) {
     for (int i = 0; i < size; ++i) {
         if (left <= x[i] && x[i] <= right) {
             return y[i];
@@ -21,7 +33,7 @@ static int find_first_match(int *x, int *y, int size, int left, int right) {
     return -1;
 }
 
-static vector<int> find_all_matches(int *x, int *y, int size, int left, int right) {
+vector<int> find_all_matches(int *x, int *y, int size, int left, int right) {
     vector<int> res;
     for (int i = 0; i < size; ++i) {
         if (left <= x[i] && x[i] <= right) {
@@ -57,7 +69,8 @@ void test_all_matches() {
 
 int main() {
     //test_all_matches();
-    run_test_match();
+    // run_test_match();
+    run_sum_match();
 }
 
 void run_test_match() {
@@ -70,8 +83,8 @@ void run_test_match() {
         // 生成随机测试数据
         for (int j = 0; j < N; ++j) {
             //x[j] = dis(engine);
-            x[j] = dis(engine);
-            y[j] = dis(engine);
+            x[j] = match_dis(engine);
+            y[j] = match_dis(engine);
             // first match baseline
         }
         cout << "finish creating." << endl;
@@ -119,3 +132,45 @@ void run_test_match() {
         free(y);
     }
 }
+
+void run_sum_match() {
+    for (int i = 0; i < len; ++i) {
+        int N = cnt[i];
+        cout << "N = " << N << endl;
+        int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+        int *y = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+        int left = 0, right = 20;
+        // 生成随机测试数据
+        for (int j = 0; j < N; ++j) {
+            //x[j] = dis(engine);
+            x[j] = sum_dis(engine);
+            y[j] = sum_dis(engine);
+            // first match baseline
+        }
+        cout << "finish creating." << endl;
+
+        // timer start
+        struct timeval start;
+        struct timeval end;
+        unsigned long diff;
+        gettimeofday(&start, NULL);
+        // baseline
+        int res1 = cal_sum(x, y, N, left, right);
+        // timer end
+        gettimeofday(&end, NULL);
+        diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+        cout << "baseline sum: " << res1 << " cost: " << diff << endl;
+
+        gettimeofday(&start, NULL);
+        // simd
+        int res2 = get_matches_sum_simd(x, y, N, left, right);
+        // timer end
+        gettimeofday(&end, NULL);
+        diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+        cout << "simd sum: " << res2 << " cost: " << diff << endl;
+        free(x);
+        free(y);
+    }
+}
+
+
