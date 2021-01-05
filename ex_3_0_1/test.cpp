@@ -5,21 +5,55 @@
 #include<sys/time.h>
 using namespace std;
 
-static std::default_random_engine engine;
-static std::uniform_int_distribution<unsigned> match_dis(0, 100000000);
-static std::uniform_int_distribution<unsigned> sum_dis(0, 100);
-const int len = 1;
-static int cnt[] = {20000000};
+std::default_random_engine engine(time(0));
+std::uniform_int_distribution<unsigned> match_dis(0, 100000000);
+std::uniform_int_distribution<unsigned> sum_dis(0, 100);
+std::uniform_int_distribution<unsigned> cnt_dis(0, 20000000);
+std::uniform_int_distribution<unsigned> min_dis(0, 20000000);
+// 默认
+int N = 20000000;
+int L = 5000;
+int R = 10000;
 
 void run_test_match();
 void run_sum_match();
+void run_cnt();
+void run_avg();
+void run_find_min();
+
+int find_min(int *x, int *y, int size, int left, int right) {
+    int ans = INT_MAX;
+    for (int i = 0; i < size; ++i) {
+        if (left <= x[i] && x[i] <= right) {
+            ans = std::min(ans, y[i]);
+        }
+    }
+    return ans;
+}
+
+float cal_avg(int *x, int *y, int size, int left, int right) {
+    int sum = 0;
+    int cnt = 0;
+    for (int i = 0; i < size; ++i) {
+        sum += (left <= x[i] && x[i] <= right) ? y[i] : 0;
+        cnt += (left <= x[i] && x[i] <= right) ? -1 : 0;
+    }
+    return cnt ? -1.0 * sum / cnt : 0;
+
+}
+
+int cnt_match(int *x, int size, int left, int right) {
+    int ans = 0;
+    for (int i = 0; i < size; ++i) {
+        ans += (left <= x[i] && x[i] <= right) ? 1 : 0;
+    }
+    return ans;
+}
 
 int cal_sum(int *x, int *y, int size, int left, int right) {
     int ans = 0;
     for (int i = 0; i < size; ++i) {
-        if (left <= x[i] && x[i] <= right) {
-            ans += y[i];
-        }
+        ans += (left <= x[i] && x[i] <= right) ? y[i] : 0;
     }
     return ans;
 }
@@ -43,134 +77,199 @@ vector<int> find_all_matches(int *x, int *y, int size, int left, int right) {
     return res;
 }
 
-void test_first_match() {
-    int x[] = {34, 65, 25, 26 , 27, 56, 78, 9, 1};
-    int y[] = {34, 5, 25, 6 , 7, 56, 78, 99, 100};
-    int size = 9;
-    int left = 0;
-    int right = 10;
-    cout << find_first_match_simd(x, y, size, left, right);
-}
-
-void test_all_matches() {
-    int x[] = {65, 5, 26 , 27, 56, 78, 9, 1};
-    int y[] = {5, 25, 6 , 7, 56, 78, 99, 100};
-    //int x[] = {1,0,1,0,1,0,1,0};
-    //int y[] = {1,1,1,1,1,1,1,1};
-    int size = 8;
-    int left = 0;
-    int right = 10;
-    vector<int> res = find_all_matches_simd(x, y, size, left, right);
-    for (int i = 0; i < res.size(); ++i) {
-        cout << res[i] << " ";
+int main(int argc, char const *argv[])
+{
+    if (argc == 4) {
+        N = atoi(argv[1]);
+        L = atoi(argv[2]);
+        R = atoi(argv[3]);
     }
-    cout << endl;
+    /* code */
+    run_find_min();
+    return 0;
 }
 
-int main() {
-    //test_all_matches();
-    // run_test_match();
-    run_sum_match();
+void run_find_min() {
+    int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+    int *y = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+    // 生成随机测试数据
+    for (int j = 0; j < N; ++j) {
+        //x[j] = dis(engine);
+        x[j] = min_dis(engine);
+        y[j] = min_dis(engine);
+    }
+    cout << "finish creating." << endl;
+
+    // timer start
+    struct timeval start;
+    struct timeval end;
+    unsigned long diff;
+    gettimeofday(&start, NULL);
+    // baseline
+    float res1 = find_min(x, y, N, L, R);
+    // timer end
+    gettimeofday(&end, NULL);
+    diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    cout << "baseline min: " << res1 << " cost: " << diff << endl;
+    gettimeofday(&start, NULL);
+    // simd
+    float res2 = get_matches_min_simd(x, y, N, L, R);
+    // timer end
+    gettimeofday(&end, NULL);
+    diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    cout << "simd min: " << res2 << " cost: " << diff << endl;
+    free(x);
+    free(y);
 }
+
+void run_avg() {
+    int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+    int *y = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+    // 生成随机测试数据
+    for (int j = 0; j < N; ++j) {
+        //x[j] = dis(engine);
+        x[j] = sum_dis(engine);
+        y[j] = sum_dis(engine);
+    }
+    cout << "finish creating." << endl;
+
+    // timer start
+    struct timeval start;
+    struct timeval end;
+    unsigned long diff;
+    gettimeofday(&start, NULL);
+    // baseline
+    float res1 = cal_avg(x, y, N, L, R);
+    // timer end
+    gettimeofday(&end, NULL);
+    diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    cout << "baseline avg: " << res1 << " cost: " << diff << endl;
+    gettimeofday(&start, NULL);
+    // simd
+    float res2 = get_matches_avg_simd(x, y, N, L, R);
+    // timer end
+    gettimeofday(&end, NULL);
+    diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    cout << "simd avg: " << res2 << " cost: " << diff << endl;
+    free(x);
+    free(y);
+}
+
+void run_cnt() {
+    int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+    // 生成随机测试数据
+    for (int j = 0; j < N; ++j) {
+        x[j] = cnt_dis(engine);
+    }
+    cout << "finish creating." << endl;
+    // timer start
+    struct timeval start;
+    struct timeval end;
+    unsigned long diff;
+    gettimeofday(&start, NULL);
+    // baseline
+    int res1 = cnt_match(x, N, L, R);
+    // timer end
+    gettimeofday(&end, NULL);
+    diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    cout << "baseline cnt: " << res1 << " cost: " << diff << endl;
+
+    gettimeofday(&start, NULL);
+    // simd
+    int res2 = count_matches_simd(x, N, L, R);
+    // timer end
+    gettimeofday(&end, NULL);
+    diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    cout << "simd cnt: " << res2 << " cost: " << diff << endl;
+    free(x);
+}
+
 
 void run_test_match() {
-    for (int i = 0; i < len; ++i) {
-        int N = cnt[i];
-        cout << "N = " << N << endl;
-        int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
-        int *y = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
-        int left = 0, right = 2000000;
-        // 生成随机测试数据
-        for (int j = 0; j < N; ++j) {
-            //x[j] = dis(engine);
-            x[j] = match_dis(engine);
-            y[j] = match_dis(engine);
-            // first match baseline
-        }
-        cout << "finish creating." << endl;
-        // timer start
-        struct timeval start;
-        struct timeval end;
-        unsigned long diff;
-        gettimeofday(&start, NULL);
-        // baseline
-        int res1 = find_first_match(x, y, N, left, right);
-        // timer end
-        gettimeofday(&end, NULL);
-        diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
-        cout << "baseline first match: " << res1 << " cost: " << diff << endl;
-
-        // first match simd
-        gettimeofday(&start, NULL);
-        // simd
-        int res2 = find_first_match_simd(x, y, N, left, right);
-        // timer end
-        gettimeofday(&end, NULL);
-        diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
-        cout << "simd first match: " << res2 << " cost: " << diff << endl;
-
-
-        vector<int> vt1, vt2;
-        // all matches baseline
-        gettimeofday(&start, NULL);
-        // baseline
-        vt1 = find_all_matches(x, y, N, left, right);
-        // timer end
-        gettimeofday(&end, NULL);
-        diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
-        cout << "baseline all matches: " << vt1.size() << " cost: " << diff << endl;
-
-        // all matches simd
-        gettimeofday(&start, NULL);
-        // simd
-        vt2 = find_all_matches_simd(x, y, N, left, right);
-        // timer end
-        gettimeofday(&end, NULL);
-        diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
-        cout << "simd all matches: " << vt2.size() << " cost: " << diff << endl;  
-        free(x);
-        free(y);
+    int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+    int *y = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+    // 生成随机测试数据
+    for (int j = 0; j < N; ++j) {
+        x[j] = match_dis(engine);
+        y[j] = match_dis(engine);
     }
+    cout << "finish creating." << endl;
+    // timer start
+    struct timeval start;
+    struct timeval end;
+    unsigned long diff;
+    gettimeofday(&start, NULL);
+    // baseline
+    int res1 = find_first_match(x, y, N, L, R);
+    // timer end
+    gettimeofday(&end, NULL);
+    diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    cout << "baseline first match: " << res1 << " cost: " << diff << endl;
+
+    // first match simd
+    gettimeofday(&start, NULL);
+    // simd
+    int res2 = find_first_match_simd(x, y, N, L, R);
+    // timer end
+    gettimeofday(&end, NULL);
+    diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    cout << "simd first match: " << res2 << " cost: " << diff << endl;
+
+
+    vector<int> vt1, vt2;
+    // all matches baseline
+    gettimeofday(&start, NULL);
+    // baseline
+    vt1 = find_all_matches(x, y, N, L, R);
+    // timer end
+    gettimeofday(&end, NULL);
+    diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    cout << "baseline all matches: " << vt1.size() << " cost: " << diff << endl;
+
+    // all matches simd
+    gettimeofday(&start, NULL);
+    // simd
+    vt2 = find_all_matches_simd(x, y, N, L, R);
+    // timer end
+    gettimeofday(&end, NULL);
+    diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    cout << "simd all matches: " << vt2.size() << " cost: " << diff << endl;  
+    free(x);
+    free(y);
+    
 }
 
 void run_sum_match() {
-    for (int i = 0; i < len; ++i) {
-        int N = cnt[i];
-        cout << "N = " << N << endl;
-        int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
-        int *y = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
-        int left = 0, right = 20;
-        // 生成随机测试数据
-        for (int j = 0; j < N; ++j) {
-            //x[j] = dis(engine);
-            x[j] = sum_dis(engine);
-            y[j] = sum_dis(engine);
-            // first match baseline
-        }
-        cout << "finish creating." << endl;
-
-        // timer start
-        struct timeval start;
-        struct timeval end;
-        unsigned long diff;
-        gettimeofday(&start, NULL);
-        // baseline
-        int res1 = cal_sum(x, y, N, left, right);
-        // timer end
-        gettimeofday(&end, NULL);
-        diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
-        cout << "baseline sum: " << res1 << " cost: " << diff << endl;
-
-        gettimeofday(&start, NULL);
-        // simd
-        int res2 = get_matches_sum_simd(x, y, N, left, right);
-        // timer end
-        gettimeofday(&end, NULL);
-        diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
-        cout << "simd sum: " << res2 << " cost: " << diff << endl;
-        free(x);
-        free(y);
+    int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+    int *y = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+    // 生成随机测试数据
+    for (int j = 0; j < N; ++j) {
+        x[j] = sum_dis(engine);
+        y[j] = sum_dis(engine);
     }
+    cout << "finish creating." << endl;
+
+    // timer start
+    struct timeval start;
+    struct timeval end;
+    unsigned long diff;
+    gettimeofday(&start, NULL);
+    // baseline
+    int res1 = cal_sum(x, y, N, L, R);
+    // timer end
+    gettimeofday(&end, NULL);
+    diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    cout << "baseline sum: " << res1 << " cost: " << diff << endl;
+
+    gettimeofday(&start, NULL);
+    // simd
+    int res2 = get_matches_sum_simd(x, y, N, L, R);
+    // timer end
+    gettimeofday(&end, NULL);
+    diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+    cout << "simd sum: " << res2 << " cost: " << diff << endl;
+    free(x);
+    free(y);
 }
 
 

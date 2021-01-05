@@ -1,5 +1,10 @@
 #pragma once
 #include<vector>
+#include <nmmintrin.h>
+#include <immintrin.h>
+#include<iostream>
+#include<limits.h>
+#include<cmath>
 
 // 使用 simd 处理的阈值，暂时定为 128
 #define THRESHOLD 128
@@ -28,4 +33,4 @@ int count_matches_simd(int *x, int size, int left, int right);
 
 float get_matches_avg_simd(int *x, int *y, int size, int left, int right);
 
-int get_matches_min(int *x, int *y, int size, int left, int right);
+int get_matches_min_simd(int *x, int *y, int size, int left, int right);
