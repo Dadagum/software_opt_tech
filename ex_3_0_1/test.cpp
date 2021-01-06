@@ -3,6 +3,10 @@
 #include<malloc.h>
 #include<random>
 #include<sys/time.h>
+#include<limits.h>
+#include<algorithm>
+#include"search.h"
+#include"c.h"
 using namespace std;
 
 std::default_random_engine engine(time(0));
@@ -10,86 +14,101 @@ std::uniform_int_distribution<unsigned> match_dis(0, 100000000);
 std::uniform_int_distribution<unsigned> sum_dis(0, 100);
 std::uniform_int_distribution<unsigned> cnt_dis(0, 20000000);
 std::uniform_int_distribution<unsigned> min_dis(0, 20000000);
-// 默认
-int N = 20000000;
-int L = 5000;
-int R = 10000;
+std::uniform_int_distribution<unsigned> search_dis(0, 10000);
 
-void run_test_match();
-void run_sum_match();
-void run_cnt();
-void run_avg();
-void run_find_min();
-
-int find_min(int *x, int *y, int size, int left, int right) {
-    int ans = INT_MAX;
-    for (int i = 0; i < size; ++i) {
-        if (left <= x[i] && x[i] <= right) {
-            ans = std::min(ans, y[i]);
-        }
-    }
-    return ans;
-}
-
-float cal_avg(int *x, int *y, int size, int left, int right) {
-    int sum = 0;
-    int cnt = 0;
-    for (int i = 0; i < size; ++i) {
-        sum += (left <= x[i] && x[i] <= right) ? y[i] : 0;
-        cnt += (left <= x[i] && x[i] <= right) ? -1 : 0;
-    }
-    return cnt ? -1.0 * sum / cnt : 0;
-
-}
-
-int cnt_match(int *x, int size, int left, int right) {
-    int ans = 0;
-    for (int i = 0; i < size; ++i) {
-        ans += (left <= x[i] && x[i] <= right) ? 1 : 0;
-    }
-    return ans;
-}
-
-int cal_sum(int *x, int *y, int size, int left, int right) {
-    int ans = 0;
-    for (int i = 0; i < size; ++i) {
-        ans += (left <= x[i] && x[i] <= right) ? y[i] : 0;
-    }
-    return ans;
-}
-
-int find_first_match(int *x, int *y, int size, int left, int right) {
-    for (int i = 0; i < size; ++i) {
-        if (left <= x[i] && x[i] <= right) {
-            return y[i];
-        }
-    }
-    return -1;
-}
-
-vector<int> find_all_matches(int *x, int *y, int size, int left, int right) {
-    vector<int> res;
-    for (int i = 0; i < size; ++i) {
-        if (left <= x[i] && x[i] <= right) {
-            res.push_back(y[i]);
-        }
-    }
-    return res;
-}
+void run_test_match(int, int, int);
+void run_sum_match(int, int, int);
+void run_cnt(int, int, int);
+void run_avg(int, int, int);
+void run_find_min(int, int, int);
+void run_search(int);
+void verify_search(int);
 
 int main(int argc, char const *argv[])
 {
+    int N = 100000000;
+    int L = 0;
+    int R = 100000000;
+    if (argc == 2) {
+        N = atoi(argv[1]);
+    }
     if (argc == 4) {
         N = atoi(argv[1]);
         L = atoi(argv[2]);
         R = atoi(argv[3]);
     }
-    /* code */
-    run_find_min();
+    //run_search(N);
+    verify_search(N);
     return 0;
 }
 
-void run_find_min() {
+void verify_search(int N) {
+    //N = 16;
+    int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+    //int x[] = {0, 76 , 345 , 470 , 474 , 534 , 605 , 668, 726};
+    
+    // 生成随机测试数据
+    for (int j = 0; j < N; ++j) {
+        x[j] = search_dis(engine);
+        //x[j] = j*3 + 1;
+    }
+    sort(x, x+N);
+    // for (int j = 0; j < N; ++j) {
+    //     cout << x[j] << " ";
+    // }
+    // cout << endl;
+    int res1, res2, target;
+    target = 330;
+    for (int i = 0; i < 10000; ++i) {
+        target = search_dis(engine);
+        res1 = scalar_binary_search(x, N, target);
+        res2 = hybrid_search(x, N, target);
+        if (res1 != res2) {
+            for (int j = 0; j < N; ++j) {
+                cout << x[j] << " ";
+            }
+            cout << endl;
+            cout << "miss match: target = " << target << "  baseline = " << res1 << " simd = " << res2 << endl;
+        }
+    }
+    free(x);
+}
+
+// N = 512
+void run_search(int N) {
+    int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
+    // 生成随机测试数据
+    for (int j = 0; j < N; ++j) {
+        //x[j] = dis(engine);
+        x[j] = search_dis(engine);
+    }
+    std::sort(x, x+N);
+    // timer start
+    struct timeval start;
+    struct timeval end;
+    unsigned long diff, res1 = 0, res2 = 0;
+    int target = 5000;
+    for (int i = 0; i < 10000; ++i) {
+        target = search_dis(engine);
+        
+        gettimeofday(&start, NULL);
+        scalar_binary_search(x, N, target);
+        gettimeofday(&end, NULL);
+        diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+        res1 += diff;
+
+        gettimeofday(&start, NULL);
+        hybrid_search(x, N, target);
+        gettimeofday(&end, NULL);
+        diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+        res2 += diff;
+    }
+    cout << "baseline binary search cost: " << res1 << endl;
+    cout << "simd binary search cost: " << res2 << endl;
+    free(x);
+}
+
+void run_find_min(int N, int L, int R) {
     int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
     int *y = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
     // 生成随机测试数据
@@ -122,7 +141,7 @@ void run_find_min() {
     free(y);
 }
 
-void run_avg() {
+void run_avg(int N, int L, int R) {
     int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
     int *y = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
     // 生成随机测试数据
@@ -155,7 +174,7 @@ void run_avg() {
     free(y);
 }
 
-void run_cnt() {
+void run_cnt(int N, int L, int R) {
     int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
     // 生成随机测试数据
     for (int j = 0; j < N; ++j) {
@@ -184,8 +203,7 @@ void run_cnt() {
     free(x);
 }
 
-
-void run_test_match() {
+void run_test_match(int N, int L, int R) {
     int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
     int *y = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
     // 生成随机测试数据
@@ -239,7 +257,7 @@ void run_test_match() {
     
 }
 
-void run_sum_match() {
+void run_sum_match(int N, int L, int R) {
     int *x = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
     int *y = (int*) memalign(AVX_ALIGN, sizeof(int)*N);
     // 生成随机测试数据

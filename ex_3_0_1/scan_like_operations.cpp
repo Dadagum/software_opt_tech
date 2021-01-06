@@ -1,4 +1,66 @@
 #include"scan_like_operations.h"
+#include<nmmintrin.h>
+#include<immintrin.h>
+#include<iostream>
+#include<limits.h>
+#include<cmath>
+#include"c.h"
+
+int find_min(int *x, int *y, int size, int left, int right) {
+    int ans = INT_MAX;
+    for (int i = 0; i < size; ++i) {
+        if (left <= x[i] && x[i] <= right) {
+            ans = std::min(ans, y[i]);
+        }
+    }
+    return ans;
+}
+
+float cal_avg(int *x, int *y, int size, int left, int right) {
+    int sum = 0;
+    int cnt = 0;
+    for (int i = 0; i < size; ++i) {
+        sum += (left <= x[i] && x[i] <= right) ? y[i] : 0;
+        cnt += (left <= x[i] && x[i] <= right) ? -1 : 0;
+    }
+    return cnt ? -1.0 * sum / cnt : 0;
+
+}
+
+int cnt_match(int *x, int size, int left, int right) {
+    int ans = 0;
+    for (int i = 0; i < size; ++i) {
+        ans += (left <= x[i] && x[i] <= right) ? 1 : 0;
+    }
+    return ans;
+}
+
+int cal_sum(int *x, int *y, int size, int left, int right) {
+    int ans = 0;
+    for (int i = 0; i < size; ++i) {
+        ans += (left <= x[i] && x[i] <= right) ? y[i] : 0;
+    }
+    return ans;
+}
+
+int find_first_match(int *x, int *y, int size, int left, int right) {
+    for (int i = 0; i < size; ++i) {
+        if (left <= x[i] && x[i] <= right) {
+            return y[i];
+        }
+    }
+    return -1;
+}
+
+std::vector<int> find_all_matches(int *x, int *y, int size, int left, int right) {
+    std::vector<int> res;
+    for (int i = 0; i < size; ++i) {
+        if (left <= x[i] && x[i] <= right) {
+            res.push_back(y[i]);
+        }
+    }
+    return res;
+}
 
 int find_first_match_simd(int *x, int *y, int size, int left, int right) {
     // 首先进行对齐(暂时不做)
@@ -9,7 +71,10 @@ int find_first_match_simd(int *x, int *y, int size, int left, int right) {
         __m256i X = _mm256_loadu_si256((__m256i*)(x+i));
         // SIMD_condition
         __m256i con = _mm256_and_si256(_mm256_cmpgt_epi32(RIGHT, X), _mm256_cmpgt_epi32(X, LEFT));
-        int mask = _mm256_movemask_epi8(con);
+        // 如果 con 为 [11111111 00000000 ........ 11111111]
+        // 那么 mask 就是 [1111 0000 .... 1111]，因此每 4 位就是一个 unit
+        // 用这种方法来实现 paper 中的 SIMD_bit_vector(mask) 函数
+        int mask = _mm256_movemask_epi8(con); 
         if (mask != 0) {
             for (int j = 0; j < 8; ++j) {
                 if (mask & 1) return *(y+i+j);
