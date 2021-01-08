@@ -10,10 +10,10 @@
 using namespace std;
 
 std::default_random_engine engine(time(0));
-std::uniform_int_distribution<unsigned> match_dis(0, 100000000);
-std::uniform_int_distribution<unsigned> sum_dis(0, 100);
-std::uniform_int_distribution<unsigned> cnt_dis(0, 20000000);
-std::uniform_int_distribution<unsigned> min_dis(0, 20000000);
+std::uniform_int_distribution<unsigned> match_dis(0, 100000);
+std::uniform_int_distribution<unsigned> sum_dis(0, 20);
+std::uniform_int_distribution<unsigned> cnt_dis(0, 100000);
+std::uniform_int_distribution<unsigned> min_dis(0, 100000);
 std::uniform_int_distribution<unsigned> search_dis(0, 10000);
 
 void run_test_match(int, int, int);
@@ -24,21 +24,93 @@ void run_find_min(int, int, int);
 void run_search(int);
 void verify_search(int);
 
+// match 测试规模
+int match_size[] = {1000000, 10000000, 100000000};
+int fm_nums = 3;
+// sum 测试规模
+int sum_size[] = {100000, 1000000, 10000000};
+int sum_nums = 3;
+// search 测试规模
+int key_size[] = {512, 1024, 2048};
+int key_nums = 3;
+
+// 测试全部
+void test_all() {
+    int N, L, R;
+    // 1. 测试 match
+    L = 10000; R = 15000;
+    cout << "test match ..." << endl;
+    for (int i = 0; i < fm_nums; ++i) {
+        N = match_size[i];
+        cout << "N = " << N << endl;
+        run_test_match(N, L, R);
+    }
+    cout << endl;
+
+    // 2. 测试 sum
+    L = 10; R = 15;
+    cout << "test sum ..." << endl;
+    for (int i = 0; i < sum_nums; ++i) {
+        N = sum_size[i];
+        cout << "N = " << N << endl;
+        run_sum_match(N, L, R);
+    }
+    cout << endl;
+
+    // 3. 测试 cnt
+    L = 10000; R = 15000;
+    cout << "test cnt ..." << endl;
+    for (int i = 0; i < fm_nums; ++i) {
+        N = match_size[i];
+        cout << "N = " << N << endl;
+        run_cnt(N, L, R);
+    }
+
+    // 4. 测试 min
+    cout << "test min:" << endl;
+    L = 10000; R = 15000;
+    for (int i = 0; i < fm_nums; ++i) {
+        N = match_size[i];
+        cout << "N = " << N << endl;
+        run_find_min(N, L, R);
+    }
+
+    // 5. 测试search
+    cout << "test search" << endl;
+    for (int i = 0; i < key_nums; ++i) {
+        N = key_size[i];
+        cout << "N = " << N << endl;
+        run_search(N);
+    }
+    cout << endl;
+}
+
+
+
 int main(int argc, char const *argv[])
 {
     int N = 100000000;
     int L = 0;
     int R = 100000000;
-    if (argc == 2) {
-        N = atoi(argv[1]);
-    }
-    if (argc == 4) {
-        N = atoi(argv[1]);
-        L = atoi(argv[2]);
-        R = atoi(argv[3]);
-    }
+    // if (argc == 2) {
+    //     N = atoi(argv[1]);
+    // }
+    // if (argc == 4) {
+    //     N = atoi(argv[1]);
+    //     L = atoi(argv[2]);
+    //     R = atoi(argv[3]);
+    // }
     //run_search(N);
-    verify_search(N);
+//test_all();
+    // 5. 测试search
+    cout << "test search" << endl;
+    for (int i = 0; i < key_nums; ++i) {
+        N = key_size[i];
+        cout << "N = " << N << endl;
+        run_search(N);
+    }
+    cout << endl;
+
     return 0;
 }
 
@@ -59,10 +131,10 @@ void verify_search(int N) {
     // cout << endl;
     int res1, res2, target;
     target = 330;
-    for (int i = 0; i < 10000; ++i) {
+    for (int i = 0; i < 1; ++i) {
         target = search_dis(engine);
         res1 = scalar_binary_search(x, N, target);
-        res2 = hybrid_search(x, N, target);
+        res2 = seq_cmp_simd(x, N, target);
         if (res1 != res2) {
             for (int j = 0; j < N; ++j) {
                 cout << x[j] << " ";
@@ -86,7 +158,7 @@ void run_search(int N) {
     // timer start
     struct timeval start;
     struct timeval end;
-    unsigned long diff, res1 = 0, res2 = 0;
+    unsigned long diff, res1 = 0, res2 = 0, res3 = 0, res4 = 0;
     int target = 5000;
     for (int i = 0; i < 10000; ++i) {
         target = search_dis(engine);
@@ -98,13 +170,27 @@ void run_search(int N) {
         res1 += diff;
 
         gettimeofday(&start, NULL);
-        hybrid_search(x, N, target);
+        naive_binary_search_simd(x, N, target);
         gettimeofday(&end, NULL);
         diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
         res2 += diff;
+
+        gettimeofday(&start, NULL);
+        seq_cmp_simd(x, N, target);
+        gettimeofday(&end, NULL);
+        diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+        res3 += diff;
+
+        gettimeofday(&start, NULL);
+        hybrid_search(x, N, target);
+        gettimeofday(&end, NULL);
+        diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
+        res4 += diff;
     }
     cout << "baseline binary search cost: " << res1 << endl;
-    cout << "simd binary search cost: " << res2 << endl;
+    cout << "naive binary search cost: " << res2 << endl;
+    cout << "seq binary search cost: " << res3 << endl;
+    cout << "hybrid binary search cost: " << res4 << endl;
     free(x);
 }
 
@@ -117,7 +203,7 @@ void run_find_min(int N, int L, int R) {
         x[j] = min_dis(engine);
         y[j] = min_dis(engine);
     }
-    cout << "finish creating." << endl;
+    //cout << "finish creating." << endl;
 
     // timer start
     struct timeval start;
@@ -126,6 +212,7 @@ void run_find_min(int N, int L, int R) {
     gettimeofday(&start, NULL);
     // baseline
     float res1 = find_min(x, y, N, L, R);
+
     // timer end
     gettimeofday(&end, NULL);
     diff =  1e6 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec);
@@ -150,7 +237,7 @@ void run_avg(int N, int L, int R) {
         x[j] = sum_dis(engine);
         y[j] = sum_dis(engine);
     }
-    cout << "finish creating." << endl;
+    //cout << "finish creating." << endl;
 
     // timer start
     struct timeval start;
@@ -180,7 +267,7 @@ void run_cnt(int N, int L, int R) {
     for (int j = 0; j < N; ++j) {
         x[j] = cnt_dis(engine);
     }
-    cout << "finish creating." << endl;
+    //cout << "finish creating." << endl;
     // timer start
     struct timeval start;
     struct timeval end;
@@ -211,7 +298,7 @@ void run_test_match(int N, int L, int R) {
         x[j] = match_dis(engine);
         y[j] = match_dis(engine);
     }
-    cout << "finish creating." << endl;
+    //cout << "finish creating." << endl;
     // timer start
     struct timeval start;
     struct timeval end;
@@ -265,7 +352,7 @@ void run_sum_match(int N, int L, int R) {
         x[j] = sum_dis(engine);
         y[j] = sum_dis(engine);
     }
-    cout << "finish creating." << endl;
+    //cout << "finish creating." << endl;
 
     // timer start
     struct timeval start;

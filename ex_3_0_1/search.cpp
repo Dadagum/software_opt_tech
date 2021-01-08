@@ -87,7 +87,8 @@ int hybrid_search(int *arr, int size, int target) {
     }
     __m256i v_target = _mm256_set1_epi32(target);
     __m256i v_con, v_cur;
-    for (int i = left * L_LEN; i + AVX_S <= size; i += AVX_S) {
+    int start = left * L_LEN;
+    for (int i = start; i + AVX_S <= size; i += AVX_S) {
         v_cur = _mm256_loadu_si256((__m256i*)(arr +i));
         v_con = _mm256_cmpgt_epi32(v_cur, v_target);
         int mask = _mm256_movemask_epi8(v_con);
@@ -101,5 +102,5 @@ int hybrid_search(int *arr, int size, int target) {
             return NOT_EXSIST;
         }
     }
-    return binary_search_helper(arr, size - left * L_LEN, target, left * L_LEN, size);
+    return binary_search_helper(arr, size - start, target, start, size);
 }
